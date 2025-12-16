@@ -1,0 +1,64 @@
+// module;
+
+// import auth.{ validate_session };
+// import models.{ todo, user };
+
+// operation create_todo(session_id: text, todo_id: text, title: text, description: text?, due_date: timestamp?) {
+//     val current_user = validate_session(session_id);
+//     require(current_user != null, "Invalid session");
+
+//     val now = op_context.last_block_time;
+//     create
+//     todo
+//     (
+//     todo_id = todo_id,
+//     user = current_user!,
+//     title = title,
+//     description = description ?: "",
+//     completed = false,
+//     created_at = now,
+//     updated_at = now,
+//     due_date = due_date ?: 0);
+// }
+
+// operation update_todo(
+//     session_id: text,
+//     todo_id: text,
+//     title: text?,
+//     description: text?,
+//     completed: boolean?,
+//     due_date: timestamp?
+// ) {
+//     val current_user = validate_session(session_id);
+//     require(current_user != null, "Invalid session");
+
+//     val todo_item = todo @ { todo_id, .user == current_user! };
+//     val now = op_context.last_block_time;
+
+//     update todo_item (
+//         title = title ?: .title,
+//         description = description ?: .description,
+//         completed = completed ?: .completed,
+//         due_date = due_date ?: .due_date,
+//         updated_at = now
+//     );
+// }
+
+// operation delete_todo(session_id: text, todo_id: text) {
+//     val current_user = validate_session(session_id);
+//     require(current_user != null, "Invalid session");
+
+//     val todo_item = todo @ { todo_id, .user == current_user! };
+//     delete todo_item;
+// }
+
+// operation toggle_todo_complete(session_id: text, todo_id: text) {
+//     val current_user = validate_session(session_id);
+//     require(current_user != null, "Invalid session");
+
+//     val todo_item = todo @ { todo_id, .user == current_user! };
+//     update todo_item (
+//         completed = not .completed,
+//         updated_at = op_context.last_block_time
+//     );
+// }

@@ -1,0 +1,40 @@
+module;
+
+// User entity for authentication
+entity user {
+    key user_id: text;
+    pub_key: byte_array;
+    username: text;
+    email: text;
+    created_at: timestamp;
+    updated_at: timestamp;
+}
+
+// User profile entity
+entity user_profile {
+    key user: user;
+    full_name: text;
+    bio: text;
+    avatar_url: text;
+}
+
+// Todo item entity
+entity todo {
+    key todo_id: text;
+    user: user;
+    mutable title: text;
+    mutable description: text;
+    mutable completed: boolean = false;
+    created_at: timestamp;
+    mutable updated_at: timestamp;
+    mutable due_date: timestamp;
+}
+
+// User sessions
+entity user_session {
+    key session_id: text;
+    user: user;
+    created_at: timestamp;
+    expires_at: timestamp;
+    mutable is_active: boolean = true;
+}

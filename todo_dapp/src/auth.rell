@@ -1,0 +1,126 @@
+module;
+
+// Import models
+import models;
+
+// Register a new user
+operation register_user(user_id: text, username: text, email: text, pub_key: byte_array) {
+    // Input validation
+    require(user_id.size() > 0, "User ID cannot be empty");
+    require(user_id.size() <= 100, "User ID too long (max 100 characters)");
+
+    val username_valid = username.size() >= 3 and username.size() <= 50;
+    require(username_valid, "Username must be between 3-50 characters");
+
+    val email_valid = email == "" or email.matches("^[^@]+@[^@]+\\.[^@]+$");
+    require(email_valid, "Invalid email format");
+
+    require(pub_key.size() > 0, "Public key cannot be empty");
+    
+    // Check for existing user with ID
+    val existing_user_id = models.user @? { user_id };
+    require(existing_user_id == null, "User with this ID already exists");
+    
+    // Check for existing username
+    val existing_username = models.user @? { username };
+    require(existing_username == null, "Username '${username}' is already taken");
+    
+    // For now, we'll use case-sensitive email comparison
+    // due to Rell's string manipulation limitations
+    if (email != "") {
+        // Check if email exists (case-sensitive for now)
+        // In a production environment, you would want to:
+        // 1. Normalize the email (convert to lowercase)
+        // 2. Remove any dots from the local part (before @) for Gmail addresses
+        // 3. Trim whitespace
+        // This would require custom string manipulation functions
+        val existing_user = models.user @? { email };
+        require(existing_user == null, "Email '${email}' is already registered");
+    }
+
+    val now = op_context.last_block_time;
+    
+    // Create the user with the email as provided
+    create models.user (
+        user_id = user_id,
+        pub_key = pub_key,
+        username = username,
+        email = email,
+        created_at = now,
+        updated_at = now
+    );
+    
+    // Create default profile
+    create models.user_profile (
+        user = models.user @ { user_id },
+        full_name = "",
+        bio = "",
+        avatar_url = ""
+    );
+
+    log("User registered: #{user_id} - #{username}");
+}
+
+// Create a new session for a user
+operation create_session(user_id: text, session_id: text) {
+    // Find user
+    val user_ref = models.user @? { user_id };
+    require(user_ref != null, "User not found");
+
+    val now = op_context.last_block_time;
+    val expires_at = now + 86400;  // 24 hours in seconds
+
+    // Deactivate old active sessions
+    // Deactivate old active sessions
+    val user_sessions = models.user_session @* { };
+    for (s in user_sessions) {
+        if (s.user == user_ref and s.is_active) {
+            update s ( is_active = false );
+        }
+    }
+
+    // Create new session
+    create models.user_session (
+        session_id = session_id,
+        user = user_ref,
+        created_at = now,
+        expires_at = expires_at,
+        is_active = true
+    );
+
+    log("Session created for user: #{user_id}");
+}
+
+// Log out a user by session ID
+operation logout_user(session_id: text) {
+    val session = models.user_session @? { session_id };
+    if (session != null) {
+        update session ( is_active = false );
+        log("User logged out: #{session.user.user_id}");
+    }
+}
+
+// Validate a session and return the associated user if active (read-only)
+// Note: Expiration check should be done in operation context
+query validate_session(session_id: text): models.user? {
+    val session = models.user_session @? { session_id };
+    return if (session != null and session.is_active) session.user else null;
+}
+
+// Validate and clean up a session (use this in operations)
+function validate_and_clean_session(session_id: text): models.user? {
+    val session = models.user_session @? { session_id };
+    if (session == null) return null;
+    
+    // Check if session is active
+    if (not session.is_active) return null;
+    
+    // Check expiration in operation context where we can access op_context
+    if (session.expires_at <= op_context.last_block_time) {
+        update session ( is_active = false );
+        log("Session expired: #{session_id}");
+        return null;
+    }
+
+    return session.user;
+}
