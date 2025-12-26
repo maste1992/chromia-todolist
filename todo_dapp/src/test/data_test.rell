@@ -1,13 +1,20 @@
 @test module;
 
-import ^^.main.{my_name, set_name};
+import auth;
+import models;
 
-function test_add_name() {
-    assert_equals(my_name.name, "World");
+function test_user_registration() {
+    val alice_id = "alice_id";
+    val alice_name = "Alice";
+    val alice_email = "alice@example.com";
+    val alice_pubkey = x"0324653EAC434488002CC06BBFB7F10FE18991E35F9FE4302DBEA6D2353DC0AB1C";
 
-    val tx = rell.test.tx(set_name("Bob"));
-    assert_equals(my_name.name, "World");
+    rell.test.tx(
+            auth.register_user(alice_id, alice_name, alice_email, alice_pubkey)
+        ).run();
 
-    tx.run();
-    assert_equals(my_name.name, "Bob");
+    val registered_user = models.user @? { .user_id == alice_id };
+    assert_not_null(registered_user);
+    assert_equals(registered_user.username, alice_name);
+    assert_equals(registered_user.email, alice_email);
 }

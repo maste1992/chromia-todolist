@@ -1,61 +1,53 @@
-// module;
+module;
 
-// import auth.{ validate_session };
-// import models.{ todo, user, user_profile };
+import auth.{ validate_session };
+import models.{ todo, user, user_profile };
 
-// query get_user_todos(session_id: text) {
-//     val current_user = validate_session(session_id);
-//     require(current_user != null, "Invalid session");
+query get_user_todos(session_id: text) {
+    val current_user = validate_session(session_id);
+    require(current_user != null, "Invalid session");
 
-//     return todo @* { .user == current_user! } (
-//         todo_id,
-//         title,
-//         description,
-//         completed,
-//         created_at,
-//         updated_at,
-//         due_date
-//     )
-//     order
-//     by
-//     .
-//     created_at
-//     desc;
-// }
+    return todo @* { .user == current_user } (
+        @sort_desc .created_at,
+        .todo_id,
+        .title,
+        .description,
+        .completed,
+        .updated_at,
+        .due_date
+    );
+}
 
-// query get_user_profile(session_id: text) {
-//     val current_user = validate_session(session_id);
-//     require(current_user != null, "Invalid session");
+query get_user_profile(session_id: text) {
+    val current_user = validate_session(session_id);
+    require(current_user != null, "Invalid session");
 
-//     return user @ { current_user!.user_id
-// }
+    val u = user @ { .user_id == current_user.user_id };
+    return (
+        user_id = u.user_id,
+        username = u.username,
+        email = u.email,
+        created_at = u.created_at,
+        profile = user_profile @? { .user == u } (
+            .full_name,
+            .bio,
+            .avatar_url
+        )
+    );
+}
 
-// (
-//     user_id,
-//     username,
-//     email,
-//     created_at,
-//     profile: user_profile @ { .user }
-// (
-//       full_name,
-//       bio,
-//       avatar_url
-//     )
-//   );
-// }
+query search_todos(session_id: text, search_term: text) {
+    val current_user = validate_session(session_id);
+    require(current_user != null, "Invalid session");
 
-// query search_todos(session_id: text, search_term: text) {
-//     val current_user = validate_session(session_id);
-//     require(current_user != null, "Invalid session");
-
-//     return todo @* { .user == current_user!, 
-//     .title.contains(search_term) or .description.contains(search_term)
-// }
-// (
-//     todo_id,
-//     title,
-//     description,
-//     completed,
-//     created_at
-//   );
-// }
+    return todo @* {
+        .user == current_user,
+        .title.contains(search_term) or .description.contains(search_term)
+    } (
+        .todo_id,
+        .title,
+        .description,
+        .completed,
+        .created_at
+    );
+}

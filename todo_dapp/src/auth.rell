@@ -3,6 +3,8 @@ module;
 // Import models
 import models;
 
+
+
 // Register a new user
 operation register_user(user_id: text, username: text, email: text, pub_key: byte_array) {
     // Input validation
