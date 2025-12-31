@@ -1,11 +1,18 @@
 module;
 
 import auth.{ validate_session };
-import models.{ todo, user };
+import models.{ todo, user, user_profile };
 
 operation create_todo(session_id: text, todo_id: text, title: text, description: text?, due_date: timestamp?) {
     val current_user = validate_session(session_id);
     require(current_user != null, "Invalid session");
+
+    // Input validation
+    require(title.size() > 0, "Title cannot be empty");
+    require(title.size() <= 255, "Title too long (max 255 characters)");
+    if (description != null) {
+        require(description.size() <= 1000, "Description too long (max 1000 characters)");
+    }
 
     val now = op_context.last_block_time;
     create todo (
@@ -30,6 +37,15 @@ operation update_todo(
 ) {
     val current_user = validate_session(session_id);
     require(current_user != null, "Invalid session");
+
+    // Input validation
+    if (title != null) {
+        require(title.size() > 0, "Title cannot be empty");
+        require(title.size() <= 255, "Title too long (max 255 characters)");
+    }
+    if (description != null) {
+        require(description.size() <= 1000, "Description too long (max 1000 characters)");
+    }
 
     val todo_item = todo @ { .todo_id == todo_id, .user == current_user };
     val now = op_context.last_block_time;
@@ -58,6 +74,35 @@ operation toggle_todo_complete(session_id: text, todo_id: text) {
     val todo_item = todo @ { .todo_id == todo_id, .user == current_user };
     update todo_item (
         completed = not .completed,
+        updated_at = op_context.last_block_time
+    );
+}
+
+operation update_user_profile(
+    session_id: text,
+    full_name: text?,
+    bio: text?,
+    avatar_url: text?
+) {
+    val current_user = validate_session(session_id);
+    require(current_user != null, "Invalid session");
+
+    // Input validation
+    if (full_name != null) {
+        require(full_name.size() <= 100, "Full name too long (max 100 characters)");
+    }
+    if (bio != null) {
+        require(bio.size() <= 500, "Bio too long (max 500 characters)");
+    }
+
+    val profile = user_profile @ { .user == current_user };
+    update profile (
+        full_name = full_name ?: .full_name,
+        bio = bio ?: .bio,
+        avatar_url = avatar_url ?: .avatar_url
+    );
+
+    update current_user (
         updated_at = op_context.last_block_time
     );
 }

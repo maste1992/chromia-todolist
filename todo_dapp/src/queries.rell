@@ -3,7 +3,7 @@ module;
 import auth.{ validate_session };
 import models.{ todo, user, user_profile };
 
-query get_user_todos(session_id: text) {
+query get_user_todos(session_id: text, n_limit: integer, n_offset: integer) {
     val current_user = validate_session(session_id);
     require(current_user != null, "Invalid session");
 
@@ -15,7 +15,7 @@ query get_user_todos(session_id: text) {
         .completed,
         .updated_at,
         .due_date
-    );
+    ) limit n_limit offset n_offset;
 }
 
 query get_user_profile(session_id: text) {

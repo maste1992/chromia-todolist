@@ -7,15 +7,15 @@ entity user {
     username: text;
     email: text;
     created_at: timestamp;
-    updated_at: timestamp;
+    mutable updated_at: timestamp;
 }
 
 // User profile entity
 entity user_profile {
     key user: user;
-    full_name: text;
-    bio: text;
-    avatar_url: text;
+    mutable full_name: text;
+    mutable bio: text;
+    mutable avatar_url: text;
 }
 
 // Todo item entity
